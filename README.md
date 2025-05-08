@@ -1,7 +1,3 @@
----
-title: "Movie Recommendation System"
----
-
 # Movie Recommendation System
 
 This project aims to improve content discovery and user engagement on movie platforms by building a robust, personalized recommender system. It integrates content-based filtering, collaborative filtering, and deep learning approaches to address cold-start, sparsity, and ranking challenges.
