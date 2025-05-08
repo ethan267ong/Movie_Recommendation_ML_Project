@@ -2,90 +2,77 @@
 title: "Movie Recommendation System"
 ---
 
-# 🎬 Movie Recommendation System
+# Movie Recommendation System
 
-This project builds a robust and modular hybrid movie recommender system using content-based filtering, collaborative filtering, and neural collaborative filtering. It integrates both rich metadata and user behavior to generate personalized movie suggestions.
+This project aims to improve content discovery and user engagement on movie platforms by building a robust, personalized recommender system. It integrates content-based filtering, collaborative filtering, and deep learning approaches to address cold-start, sparsity, and ranking challenges.
 
-## 📁 Project Structure
+## Abstract
 
-### 1. `step_1_data_preprocess.ipynb` – Data Preprocessing
-- Merges and cleans `ratings.csv`, `movies.csv`, and `tags.csv`, and maps them with the TMDB dataset.
-- Engineers features from movie metadata: `director_embedding`, `main_cast_embeddings`, `production_company`, `original_language_embedding`.
-- Filters out low-interaction users and low-information movies.
-- Prepares train-test splits (including per-user holdouts).
+In the era of digital streaming and overwhelming content choices, our goal is to enhance user satisfaction by recommending movies that align with individual preferences. We tackled challenges such as item cold-start, data sparsity, and training inefficiencies using three approaches:
 
-> **Note:** Dataset integration links TMDB and The Movies Dataset via TMDB and IMDb IDs. Embeddings are normalized. A custom `weighted_vote_score` metric reflects item popularity.
+- **ScaNN-based Content Filtering** for fast semantic similarity search
+- **LightFM Hybrid Filtering** for cold-start resilience
+- **NeuMF (Neural Matrix Factorization)** to capture both linear and nonlinear dynamics
 
----
+Evaluation was conducted using Top-K metrics and a realistic per-user temporal split.
 
-### 2. `step_2_Content_ScaNN.ipynb` – Content-Based Filtering with ScaNN
-- Constructs 1500-dimensional semantic embeddings using genre, cast, director, production company, and language vectors.
-- Applies embedding weights: genre & cast (1.2), director (0.7), others (1.0).
-- Reduces to 100D using PCA (~90% variance retained).
-- Uses Google ScaNN for efficient approximate nearest-neighbor search.
+## Datasets and Feature Engineering
 
-> **Highlight:** Post-processing step ranks retrieved items by `weighted_vote_score` to prioritize quality.
+We integrated two datasets:
 
-**Evaluation Metrics:**
+- **TMDB 5000 Movie Metadata** (features: genre, cast, crew, company, language) [https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata]
+- **Kaggle Movies Dataset** (26M+ user interactions, ratings, and timestamps) [https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset?select=links.csv]
 
-| Split | Precision@10 | NDCG@10 |
-|-------|---------------|---------|
-| Train | 2.94%         | 0.0477  |
-| Test  | 1.24%         | 0.0326  |
+Key engineered features include:
+- **Genre**: One-hot encoded
+- **Weighted Vote Score**: Combines average rating and vote count
+- **Director/Cast/Company/Language Embeddings**: 300D semantic vectors via spaCy
+- **Dimensionality Reduction**: PCA and TruncatedSVD applied to 1500D vectors
 
-> **Insight:** Pure content-based filtering suffers from limited personalization. Hybridization is needed.
+User filtering removed users with <5 ratings or zero variance to ensure data quality.
 
----
+## Model 1: ScaNN Content Filtering
 
-### 3. `step_3_LightFM.ipynb` – Hybrid Collaborative Filtering with LightFM
-- Builds user–movie interaction matrix (ratings ≥ 4 mapped to 1).
-- Applies TruncatedSVD on content embeddings to reduce from 1500D to 446D.
-- Trains using WARP loss to optimize Top-K relevance.
-- Adagrad optimizer, 20 latent factors, 15 epochs.
+- **Inputs**: Weighted and normalized embeddings (genre, cast, director, company, language)
+- **Embedding Weights**: Genre & cast (1.2), director (0.7), others (1.0)
+- **Technique**: PCA (100D) + ScaNN with tree-structured search & asymmetric hashing
 
-> **Highlight:** Integrates metadata as side features, improving cold-start performance.
+### Evaluation:
+- Train Precision@10: 2.94%, NDCG@10: 0.0477
+- Test Precision@10: 1.24%, NDCG@10: 0.0326
 
-**Evaluation Metrics:**
+**Insight**: Efficient but low personalization. Lacks collaborative signals.
 
-| Split | Precision@10 | NDCG@10 |
-|-------|---------------|---------|
-| Train | 31.63%        | 0.5309  |
-| Test  | 13.09%        | 0.2064  |
+## Model 2: LightFM Hybrid Recommendation
 
-> **Insight:** Performs well overall. Signs of overfitting—further generalization methods recommended.
+- **Inputs**: Ratings ≥ 4 as implicit positives, SVD-compressed 446D item metadata
+- **Loss**: WARP (Weighted Approximate-Rank Pairwise)
+- **Optimizer**: Adagrad, 20 latent dimensions, 15 epochs
 
----
+### Evaluation:
+- Train Precision@10: 31.63%, NDCG@10: 0.5309
+- Test Precision@10: 13.09%, NDCG@10: 0.2064, AUC: 87.81%
 
-### 4. `step_4_NeuMF.ipynb` – Neural Collaborative Filtering (NeuMF)
-- Combines Generalized Matrix Factorization (GMF) and MLP for deep preference modeling.
-- Incorporates side metadata embeddings (genres, cast, directors, etc.) into the MLP path.
-- Uses PyTorch, Adam optimizer, and MSE loss.
+**Insight**: High hit rate and recall. Some overfitting observed. Good cold-start handling.
 
-> **Highlight:** Uses three pathways: GMF, MLP, and metadata, enhancing representation and generalization.
+## Model 3: NeuMF (GMF + MLP + Metadata)
 
-**Evaluation Metrics:**
+- **Architecture**:
+  - GMF: Element-wise user-item embeddings
+  - MLP: Concatenated embeddings + ReLU layers
+  - Metadata fusion (genre, director, cast, etc.) via additive/concat pathways
+- **Training**: PyTorch, MSE loss, Adam optimizer, batch size 512
 
-| Split | Precision@10 | NDCG@10 | AUC     |
-|-------|---------------|---------|---------|
-| Train | 9.83%         | 0.1125  | 75.82%  |
-| Test  | 10.48%        | 0.1885  | 82.36%  |
+### Evaluation:
+- RMSE: 0.8813
+- Train Precision@10: 9.83%, NDCG@10: 0.1125
+- Test Precision@10: 10.48%, NDCG@10: 0.1885, AUC: 82.36%
 
-> **Insight:** High recall and generalization. Cold-start robustness improved. Ranking could be further optimized.
+**Insight**: Robust generalization and cold-start improvement via side features.
 
----
-
-## ⚙️ Setup
+## System Setup
 
 ### Requirements
-
-- Python 3.8+
-- Jupyter Notebook
-- `pandas`, `numpy`, `scikit-learn`, `matplotlib`
-- `tensorflow`, `keras`, `torch`
-- `scann`, `lightfm`
-- `tqdm`, `surprise`, `nltk`
-
-### Installation
-
 ```bash
-pip install -r requirements.txt
+pip install pandas numpy scikit-learn matplotlib tensorflow keras torch scann lightfm tqdm surprise nltk
+
