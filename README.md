@@ -71,4 +71,39 @@ User filtering removed users with <5 ratings or zero variance to ensure data qua
 ### Requirements
 ```bash
 pip install pandas numpy scikit-learn matplotlib tensorflow keras torch scann lightfm tqdm surprise nltk
+```
+
+### Execution Order
+1. `step_1_data_preprocess.ipynb`
+2. `step_2_Content_ScaNN.ipynb`
+3. `step_3_LightFM.ipynb`
+4. `step_4_NeuMF.ipynb`
+
+## 📊 Evaluation Metrics Used
+- **Precision@K**, **Recall@K**
+- **NDCG**, **MAP**, **MRR**, **Hit Rate@K**
+- **RMSE** for rating prediction
+- **AUC** for ranking evaluation
+
+## 🧠 Contributions & Design Decisions
+- Used **high-quality, popular Kaggle datasets** linked via TMDB IDs
+- Applied **semantic feature engineering** and **filtering logic** to improve data quality
+- Tuned model architectures for **real-world deployment feasibility** and **efficiency**
+- Simulated production-like evaluation via **per-user temporal split**
+
+## 📌 Future Enhancements
+- [ ] Combine model predictions via weighted ensemble
+- [ ] Deploy model outputs via Flask or Streamlit
+- [ ] Add additional metadata (e.g., plot summaries, reviews)
+- [ ] Integrate temporal user modeling
+- [ ] Visualize embeddings via UMAP/t-SNE
+
+## 🔗 References
+1. He et al. (2017). Neural Collaborative Filtering
+2. Kula (2015). Metadata Embeddings for Cold-Start
+3. Google Research (2020). ScaNN
+4. Weston et al. (2011). WARP loss
+5. Duchi et al. (2011). Adagrad
+6. Lops et al. (2011). Recommender Systems Handbook
+7. IBM (2024). Content-Based Filtering Overview
 
